@@ -32,13 +32,19 @@ class MoviesController < ApplicationController
   def index
     @movies = Movie.all
     
-    if not params[:ratings] or not params[:func]
-      if session[:ratings] or session[:func]
-        #Use the param value if it exists, and the session value otherwise. This has to be done in one redirect.
-        ratValue = params[:ratings] ? params[:ratings] : session[:ratings]
-        funcValue = params[:func] ? params[:func] : session[:func]
-        flash.keep
+    if (not params[:ratings] and session[:ratings]) or (not params[:func] and session[:func])
+      #Use the param value if it exists, and the session value otherwise. This has to be done in one redirect.
+      ratValue = params[:ratings] ? params[:ratings] : session[:ratings]
+      funcValue = params[:func] ? params[:func] : session[:func]
+      
+      flash.keep
+      #Do a final check for entirely missing values...
+      if ratValue and funcValue
         redirect_to movies_path({:ratings => ratValue, :func => funcValue})
+      elsif ratValue
+        redirect_to movies_path({:ratings => ratValue})
+      elsif funcValue
+        redirect_to movies_path({:func => funcValue})
       end
     end
     
