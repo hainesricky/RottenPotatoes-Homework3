@@ -1,4 +1,13 @@
 class MoviesController < ApplicationController
+  
+  def initialize
+    @all_ratings = Movie.all_ratings
+    @rating_selected = {}
+    @all_ratings.each do |rating|
+      @rating_selected[rating] = true
+    end
+    super
+  end
 
   def movie_params
     params.require(:movie).permit(:title, :rating, :description, :release_date)
@@ -19,9 +28,18 @@ class MoviesController < ApplicationController
       @movies = Movie.all.order(:release_date)
       @dateSelected = true
       @titleSelected = false
-    else
-      @movies = Movie.all
+    elsif params[:ratings]
       @titleSelected = false
+      @dateSelected = false
+      ratings = params[:ratings].keys
+      @rating_selected.keys.each do |rating|
+        @rating_selected[rating] = ratings.include? rating
+      end
+      @movies = Movie.where(rating: ratings)
+    else
+      @titleSelected = false
+      @dateSelected = false
+      @movies = Movie.all
     end
   end
 
