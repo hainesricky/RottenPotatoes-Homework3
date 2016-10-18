@@ -19,28 +19,49 @@ class MoviesController < ApplicationController
     # will render app/views/movies/show.<extension> by default
   end
 
+  def filter_movies(ratingList)
+    @titleSelected = false
+    @dateSelected = false
+    ratings = ratingList.keys
+    @rating_selected.keys.each do |rating|
+      @rating_selected[rating] = ratings.include? rating
+    end
+    @movies = Movie.where(rating: ratings)
+  end
+
   def index
+    @movies = Movie.all
+    
+    if not params[:ratings] or not params[:func]
+      if session[:ratings] or session[:func]
+        #Use the param value if it exists, and the session value otherwise. This has to be done in one redirect.
+        ratValue = params[:ratings] ? params[:ratings] : session[:ratings]
+        funcValue = params[:func] ? params[:func] : session[:func]
+        flash.keep
+        redirect_to movies_path({:ratings => ratValue, :func => funcValue})
+      end
+    end
+    
+    if params[:ratings]
+      filter_movies(params[:ratings])
+      session[:ratings] = params[:ratings]
+    end
+    
     if params[:func] == "tsort"
-      @movies = Movie.all.order(:title)
+      @movies = @movies.order(:title)
       @titleSelected = true
       @dateSelected = false
+      session[:func] = "tsort"
     elsif params[:func] == "dsort"
-      @movies = Movie.all.order(:release_date)
+      @movies = @movies.order(:release_date)
       @dateSelected = true
       @titleSelected = false
-    elsif params[:ratings]
-      @titleSelected = false
-      @dateSelected = false
-      ratings = params[:ratings].keys
-      @rating_selected.keys.each do |rating|
-        @rating_selected[rating] = ratings.include? rating
-      end
-      @movies = Movie.where(rating: ratings)
+      session[:func] = "dsort"
     else
       @titleSelected = false
       @dateSelected = false
-      @movies = Movie.all
     end
+    
   end
 
   def new
@@ -48,6 +69,7 @@ class MoviesController < ApplicationController
   end
 
   def create
+    session.clear
     @movie = Movie.create!(movie_params)
     flash[:notice] = "#{@movie.title} was successfully created."
     redirect_to movies_path
